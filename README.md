@@ -37,6 +37,8 @@ deeplearning-project/
 |   |-- generate_splits.py
 |   |-- inspect_dataloader.py
 |   `-- sanity_check.py
+|-- tests/
+|   `-- test_data_evaluation.py
 `-- src/
     |-- data/
     |   |-- __init__.py
@@ -69,6 +71,22 @@ Evaluation inputs:
 - references: `dict[str, list[str]]`
 - predictions: `dict[str, str]`
 
+## Caption Preprocessing Rules
+
+The shared caption preprocessing pipeline is fixed so both models consume the same tokenized data:
+
+- trim leading and trailing whitespace
+- lowercase all caption text
+- surround these punctuation marks with spaces before tokenization:
+  `. , ! ? ; : " ( )`
+- collapse repeated whitespace to a single space
+- tokenize by whitespace after normalization
+- add `<start>` and `<end>` after tokenization when building model inputs
+- reserve `<pad>`, `<start>`, `<end>`, and `<unk>` with fixed ids `0, 1, 2, 3`
+- build the vocabulary from the training split only
+- use `min_word_freq = 5`
+- use `max_caption_length = 40`
+
 ## Image Preprocessing Defaults
 
 Unless a model owner provides a custom image transform, the shared loader will:
@@ -83,9 +101,19 @@ Default normalization:
 - mean: `[0.485, 0.456, 0.406]`
 - std: `[0.229, 0.224, 0.225]`
 
-## Evaluation JSON Format
+## Evaluation Contract
 
-References JSON must map each image id to a list of reference captions:
+The shared evaluation pipeline computes corpus-level metrics over the aligned set of image ids that appear in both files.
+
+Metrics:
+
+- BLEU-1
+- BLEU-2
+- BLEU-3
+- BLEU-4
+- METEOR
+
+References JSON must map each image id to a non-empty list of reference captions:
 
 ```json
 {
@@ -96,7 +124,7 @@ References JSON must map each image id to a list of reference captions:
 }
 ```
 
-Predictions JSON must map each image id to one generated caption string:
+Predictions JSON must map each image id to exactly one generated caption string:
 
 ```json
 {
@@ -143,6 +171,12 @@ py -3 scripts/evaluate_captions.py --references-path configs/references.example.
 py -3 scripts/sanity_check.py
 ```
 
+8. Run the automated tests:
+
+```powershell
+py -3 -m unittest tests.test_data_evaluation
+```
+
 ## Key Files
 
 - Split files: [metadata/splits](metadata/splits)
@@ -150,6 +184,7 @@ py -3 scripts/sanity_check.py
 - Shared dataset loader: [dataset.py](src/data/dataset.py)
 - Shared evaluation metrics: [metrics.py](src/eval/metrics.py)
 - Sanity-check output: [sanity_check_summary.json](metadata/sanity_check_summary.json)
+- Automated tests: [test_data_evaluation.py](tests/test_data_evaluation.py)
 
 ## Dependencies
 
@@ -164,16 +199,3 @@ METEOR may also require NLTK data resources:
 ```powershell
 py -3 -m nltk.downloader wordnet omw-1.4
 ```
-
-## Notes For The Report
-
-The `Data + Evaluation` section should cover:
-
-- dataset summary
-- image split methodology
-- caption preprocessing pipeline
-- vocabulary rules and thresholds
-- padding and special token handling
-- image resizing and normalization choices
-- evaluation metrics and why they were chosen
-- any known data quality issues or limitations

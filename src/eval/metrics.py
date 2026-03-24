@@ -13,7 +13,7 @@ def compute_bleu_scores(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
 ) -> Dict[str, float]:
-    """Compute BLEU-1 through BLEU-4 with a shared evaluation contract."""
+    """Compute corpus-level BLEU-1 through BLEU-4 on aligned image ids."""
     try:
         from nltk.translate.bleu_score import SmoothingFunction, corpus_bleu
     except ImportError as exc:  # pragma: no cover - dependency may be installed later
@@ -41,7 +41,7 @@ def compute_meteor_score(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
 ) -> float:
-    """Compute the mean METEOR score over aligned image ids."""
+    """Compute mean corpus-level METEOR over aligned image ids."""
     try:
         from nltk.translate.meteor_score import meteor_score
     except ImportError as exc:  # pragma: no cover - dependency may be installed later
@@ -71,7 +71,7 @@ def evaluate_captions(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
 ) -> Dict[str, float]:
-    """Compute all shared captioning metrics in one place."""
+    """Compute the shared corpus-level captioning metrics in one place."""
     results = compute_bleu_scores(references, predictions)
     results["meteor"] = compute_meteor_score(references, predictions)
     return results
