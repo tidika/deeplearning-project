@@ -1,0 +1,125 @@
+{
+  "python_executable": "D:\\Program Files\\Python313\\python.exe",
+  "overall_passed": true,
+  "checks": [
+    {
+      "name": "dataset_alignment",
+      "passed": true,
+      "details": {
+        "num_image_files": 31783,
+        "num_caption_image_ids": 31783,
+        "image_only_count": 0,
+        "caption_only_count": 0
+      }
+    },
+    {
+      "name": "captions_per_image",
+      "passed": true,
+      "details": {
+        "unique_counts": [
+          5
+        ],
+        "min": 5,
+        "max": 5
+      }
+    },
+    {
+      "name": "split_disjointness",
+      "passed": true,
+      "details": {
+        "train_val_overlap": 0,
+        "train_test_overlap": 0,
+        "val_test_overlap": 0
+      }
+    },
+    {
+      "name": "split_coverage",
+      "passed": true,
+      "details": {
+        "total_unique_split_ids": 31783,
+        "caption_image_ids": 31783,
+        "missing_from_splits": 0,
+        "missing_from_captions": 0
+      }
+    },
+    {
+      "name": "split_image_files_exist",
+      "passed": true,
+      "details": {
+        "missing_train_images": 0,
+        "missing_val_images": 0,
+        "missing_test_images": 0
+      }
+    },
+    {
+      "name": "vocab_special_tokens",
+      "passed": true,
+      "details": {
+        "token_ids": {
+          "<pad>": 0,
+          "<start>": 1,
+          "<end>": 2,
+          "<unk>": 3
+        },
+        "vocab_size": 7013
+      }
+    },
+    {
+      "name": "vocab_matches_training_split",
+      "passed": true,
+      "details": {
+        "num_train_images": 25426,
+        "num_train_captions": 127130,
+        "stats_num_train_images": 25426,
+        "stats_num_train_captions": 127130,
+        "min_word_freq": 5
+      }
+    },
+    {
+      "name": "dataloader_batch",
+      "passed": true,
+      "details": {
+        "images_shape": [
+          4,
+          3,
+          224,
+          224
+        ],
+        "caption_ids_shape": [
+          4,
+          18
+        ],
+        "target_ids_shape": [
+          4,
+          18
+        ],
+        "padding_mask_shape": [
+          4,
+          18
+        ],
+        "lengths_shape": [
+          4
+        ],
+        "batch_image_min": -2.0836544036865234,
+        "batch_image_max": 2.640000104904175,
+        "first_image_id": "1000092795.jpg"
+      }
+    },
+    {
+      "name": "evaluation_pipeline",
+      "passed": true,
+      "details": {
+        "metrics": {
+          "bleu_1": 0.501671,
+          "bleu_2": 0.347846,
+          "bleu_3": 0.239836,
+          "bleu_4": 0.176079,
+          "meteor": 0.405926
+        },
+        "num_reference_ids": 2,
+        "num_prediction_ids": 2,
+        "num_common_ids": 2
+      }
+    }
+  ]
+}

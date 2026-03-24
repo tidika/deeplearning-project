@@ -1,0 +1,23 @@
+{
+  "captions_path": "data/captions.txt",
+  "seed": 42,
+  "ratios": {
+    "train": 0.8,
+    "val": 0.1,
+    "test": 0.1
+  },
+  "num_images": 31783,
+  "num_captions": 158915,
+  "captions_per_image": {
+    "unique_values": [
+      5
+    ],
+    "min": 5,
+    "max": 5
+  },
+  "split_sizes": {
+    "train": 25426,
+    "val": 3178,
+    "test": 3179
+  }
+}
