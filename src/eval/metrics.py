@@ -9,9 +9,32 @@ def _tokenize_for_metrics(text: str) -> List[str]:
     return text.strip().lower().split()
 
 
+def _validate_evaluation_ids(
+    references: Dict[str, List[str]],
+    predictions: Dict[str, str],
+    require_exact_match: bool,
+) -> List[str]:
+    common_ids = sorted(set(references) & set(predictions))
+    if not common_ids:
+        raise ValueError("references and predictions must share at least one image id")
+
+    if require_exact_match:
+        missing_predictions = sorted(set(references) - set(predictions))
+        extra_predictions = sorted(set(predictions) - set(references))
+        if missing_predictions or extra_predictions:
+            raise ValueError(
+                "references and predictions must contain the same image ids; "
+                f"missing_predictions={len(missing_predictions)}, "
+                f"extra_predictions={len(extra_predictions)}"
+            )
+
+    return common_ids
+
+
 def compute_bleu_scores(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
+    require_exact_match: bool = True,
 ) -> Dict[str, float]:
     """Compute corpus-level BLEU-1 through BLEU-4 on aligned image ids."""
     try:
@@ -21,9 +44,11 @@ def compute_bleu_scores(
             "nltk is required to compute BLEU scores. Install it with `py -3 -m pip install nltk`."
         ) from exc
 
-    common_ids = sorted(set(references) & set(predictions))
-    if not common_ids:
-        raise ValueError("references and predictions must share at least one image id")
+    common_ids = _validate_evaluation_ids(
+        references,
+        predictions,
+        require_exact_match=require_exact_match,
+    )
 
     refs = [[_tokenize_for_metrics(caption) for caption in references[image_id]] for image_id in common_ids]
     hyps = [_tokenize_for_metrics(predictions[image_id]) for image_id in common_ids]
@@ -40,6 +65,7 @@ def compute_bleu_scores(
 def compute_meteor_score(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
+    require_exact_match: bool = True,
 ) -> float:
     """Compute mean corpus-level METEOR over aligned image ids."""
     try:
@@ -49,9 +75,11 @@ def compute_meteor_score(
             "nltk is required to compute METEOR. Install it with `py -3 -m pip install nltk`."
         ) from exc
 
-    common_ids = sorted(set(references) & set(predictions))
-    if not common_ids:
-        raise ValueError("references and predictions must share at least one image id")
+    common_ids = _validate_evaluation_ids(
+        references,
+        predictions,
+        require_exact_match=require_exact_match,
+    )
 
     scores = []
     try:
@@ -70,8 +98,17 @@ def compute_meteor_score(
 def evaluate_captions(
     references: Dict[str, List[str]],
     predictions: Dict[str, str],
+    require_exact_match: bool = True,
 ) -> Dict[str, float]:
     """Compute the shared corpus-level captioning metrics in one place."""
-    results = compute_bleu_scores(references, predictions)
-    results["meteor"] = compute_meteor_score(references, predictions)
+    results = compute_bleu_scores(
+        references,
+        predictions,
+        require_exact_match=require_exact_match,
+    )
+    results["meteor"] = compute_meteor_score(
+        references,
+        predictions,
+        require_exact_match=require_exact_match,
+    )
     return results

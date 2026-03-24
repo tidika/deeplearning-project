@@ -85,7 +85,7 @@ The shared caption preprocessing pipeline is fixed so both models consume the sa
 - reserve `<pad>`, `<start>`, `<end>`, and `<unk>` with fixed ids `0, 1, 2, 3`
 - build the vocabulary from the training split only
 - use `min_word_freq = 5`
-- use `max_caption_length = 40`
+- use `max_caption_length = 40`, where the limit includes both boundary tokens
 
 ## Image Preprocessing Defaults
 
@@ -103,7 +103,7 @@ Default normalization:
 
 ## Evaluation Contract
 
-The shared evaluation pipeline computes corpus-level metrics over the aligned set of image ids that appear in both files.
+The shared evaluation pipeline computes corpus-level metrics over the exact set of image ids present in both files. By default, references and predictions must contain the same image ids; partial prediction files are treated as invalid rather than silently scoring only the overlap.
 
 Metrics:
 

@@ -80,13 +80,17 @@ def main() -> None:
     if not common_ids:
         raise ValueError("references and predictions do not share any image ids")
 
-    results = evaluate_captions(references, predictions)
+    missing_predictions = sorted(set(references) - set(predictions))
+    extra_predictions = sorted(set(predictions) - set(references))
+    results = evaluate_captions(references, predictions, require_exact_match=True)
     summary = {
         "references_path": args.references_path,
         "predictions_path": args.predictions_path,
         "num_reference_ids": len(references),
         "num_prediction_ids": len(predictions),
         "num_common_ids": len(common_ids),
+        "num_missing_predictions": len(missing_predictions),
+        "num_extra_predictions": len(extra_predictions),
         "metrics": {metric_name: round(float(metric_value), 6) for metric_name, metric_value in results.items()},
     }
 
