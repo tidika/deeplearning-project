@@ -12,6 +12,7 @@ The comparison is designed to use the same data pipeline, vocabulary, image prep
 ```text
 deeplearning-project/
 |-- README.md
+|-- requirements.txt
 |-- configs/
 |   |-- data_config.example.json
 |   |-- predictions.example.json
@@ -36,9 +37,14 @@ deeplearning-project/
 |   |-- evaluate_captions.py
 |   |-- generate_splits.py
 |   |-- inspect_dataloader.py
+|   |-- run_checks.py
 |   `-- sanity_check.py
 |-- tests/
-|   `-- test_data_evaluation.py
+|   |-- test_data_evaluation.py
+|   `-- test_lightweight_checks.py
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml
 `-- src/
     |-- data/
     |   |-- __init__.py
@@ -47,12 +53,33 @@ deeplearning-project/
     |   |-- preprocess.py
     |   |-- splits.py
     |   `-- vocab.py
-    `-- eval/
-        |-- __init__.py
-        `-- metrics.py
+    |-- eval/
+    |   |-- __init__.py
+    |   `-- metrics.py
+    `-- project_config.py
 ```
 
 Note: `data/` is ignored by Git in this repo, so committed split files should live under `metadata/splits/`, not under `data/`.
+
+## Shared Configuration
+
+The data and evaluation scripts use [data_config.example.json](configs/data_config.example.json) as the shared source of default paths and settings.
+
+Config-backed settings include:
+
+- captions path
+- image directory
+- split output directory
+- vocabulary output directory
+- train / val / test ratios
+- random seed
+- `min_word_freq`
+- `max_caption_length`
+- image size
+- image normalization
+- example evaluation file paths
+
+All major scripts still allow CLI overrides, but their defaults come from the shared config file.
 
 ## Shared Interface
 
@@ -139,60 +166,92 @@ Templates:
 
 ## Quick Start
 
-1. Put Flickr30k images under [data/Images](data/Images).
-2. Keep captions in [data/captions.txt](data/captions.txt).
-3. Generate fixed splits:
+1. Install dependencies:
 
 ```powershell
-py -3 scripts/generate_splits.py
+py -3 -m pip install -r requirements.txt
 ```
 
-4. Build the shared vocabulary from the training split:
+2. Put Flickr30k images under [data/Images](data/Images).
+3. Keep captions in [data/captions.txt](data/captions.txt).
+4. Generate fixed splits:
 
 ```powershell
-py -3 scripts/build_vocab.py --min-word-freq 5
+py -3 scripts/generate_splits.py --config configs/data_config.example.json
 ```
 
-5. Inspect one batch from the shared DataLoader:
+5. Build the shared vocabulary from the training split:
 
 ```powershell
-py -3 scripts/inspect_dataloader.py --split-path metadata/splits/train.txt --batch-size 4
+py -3 scripts/build_vocab.py --config configs/data_config.example.json
 ```
 
-6. Evaluate captions from JSON files:
+6. Inspect one batch from the shared DataLoader:
 
 ```powershell
-py -3 scripts/evaluate_captions.py --references-path configs/references.example.json --predictions-path configs/predictions.example.json
+py -3 scripts/inspect_dataloader.py --config configs/data_config.example.json
 ```
 
-7. Run the full sanity check:
+7. Evaluate captions from JSON files:
 
 ```powershell
-py -3 scripts/sanity_check.py
+py -3 scripts/evaluate_captions.py --config configs/data_config.example.json
 ```
 
-8. Run the automated tests:
+8. Run the full local verification suite:
+
+```powershell
+py -3 scripts/run_checks.py --config configs/data_config.example.json
+```
+
+## Validation
+
+Full local verification:
+
+```powershell
+py -3 scripts/run_checks.py --config configs/data_config.example.json
+```
+
+Direct sanity check only:
+
+```powershell
+py -3 scripts/sanity_check.py --config configs/data_config.example.json
+```
+
+Full dataset-dependent unit tests:
 
 ```powershell
 py -3 -m unittest tests.test_data_evaluation
 ```
 
+Lightweight tests that do not require the local Flickr30k dataset:
+
+```powershell
+py -3 -m unittest tests.test_lightweight_checks
+```
+
+## CI
+
+A minimal GitHub Actions workflow is provided at [ci.yml](.github/workflows/ci.yml). It runs lightweight checks that do not depend on the local Flickr30k dataset:
+
+- dependency installation
+- NLTK resource download
+- Python compile checks
+- `tests.test_lightweight_checks`
+
 ## Key Files
 
+- Shared config: [data_config.example.json](configs/data_config.example.json)
 - Split files: [metadata/splits](metadata/splits)
 - Vocabulary files: [metadata/vocab](metadata/vocab)
 - Shared dataset loader: [dataset.py](src/data/dataset.py)
 - Shared evaluation metrics: [metrics.py](src/eval/metrics.py)
+- Local verification entrypoint: [run_checks.py](scripts/run_checks.py)
 - Sanity-check output: [sanity_check_summary.json](metadata/sanity_check_summary.json)
-- Automated tests: [test_data_evaluation.py](tests/test_data_evaluation.py)
+- Full dataset-dependent tests: [test_data_evaluation.py](tests/test_data_evaluation.py)
+- Lightweight CI tests: [test_lightweight_checks.py](tests/test_lightweight_checks.py)
 
 ## Dependencies
-
-BLEU and METEOR require `nltk`:
-
-```powershell
-py -3 -m pip install nltk
-```
 
 METEOR may also require NLTK data resources:
 

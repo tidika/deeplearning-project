@@ -13,25 +13,15 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.eval.metrics import evaluate_captions
+from src.project_config import DEFAULT_CONFIG_PATH, get_config_value, load_project_config
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--references-path",
-        required=True,
-        help="Path to JSON mapping image ids to a list of reference captions.",
-    )
-    parser.add_argument(
-        "--predictions-path",
-        required=True,
-        help="Path to JSON mapping image ids to a generated caption string.",
-    )
-    parser.add_argument(
-        "--output-path",
-        default="",
-        help="Optional path to save the evaluation summary JSON.",
-    )
+    parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to the shared data config JSON.")
+    parser.add_argument("--references-path", default=None, help="Path to JSON mapping image ids to a list of reference captions.")
+    parser.add_argument("--predictions-path", default=None, help="Path to JSON mapping image ids to a generated caption string.")
+    parser.add_argument("--output-path", default="", help="Optional path to save the evaluation summary JSON.")
     return parser.parse_args()
 
 
@@ -72,9 +62,13 @@ def _validate_predictions(raw) -> Dict[str, str]:
 
 def main() -> None:
     args = parse_args()
+    config = load_project_config(REPO_ROOT / args.config)
 
-    references = _validate_references(_load_json(REPO_ROOT / args.references_path))
-    predictions = _validate_predictions(_load_json(REPO_ROOT / args.predictions_path))
+    references_path = args.references_path or get_config_value(config, "references_example_path", "configs/references.example.json")
+    predictions_path = args.predictions_path or get_config_value(config, "predictions_example_path", "configs/predictions.example.json")
+
+    references = _validate_references(_load_json(REPO_ROOT / references_path))
+    predictions = _validate_predictions(_load_json(REPO_ROOT / predictions_path))
 
     common_ids = sorted(set(references) & set(predictions))
     if not common_ids:
@@ -84,8 +78,9 @@ def main() -> None:
     extra_predictions = sorted(set(predictions) - set(references))
     results = evaluate_captions(references, predictions, require_exact_match=True)
     summary = {
-        "references_path": args.references_path,
-        "predictions_path": args.predictions_path,
+        "config_path": args.config,
+        "references_path": references_path,
+        "predictions_path": predictions_path,
         "num_reference_ids": len(references),
         "num_prediction_ids": len(predictions),
         "num_common_ids": len(common_ids),
