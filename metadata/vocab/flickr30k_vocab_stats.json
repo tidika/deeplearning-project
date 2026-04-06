@@ -1,7 +1,9 @@
 {
+  "config_path": "configs/data_config.example.json",
   "captions_path": "data/captions.txt",
-  "train_split": "metadata/splits/train.txt",
+  "train_split": "metadata\\splits\\train.txt",
   "min_word_freq": 5,
+  "max_caption_length": 40,
   "num_train_images": 25426,
   "num_train_captions": 127130,
   "vocab_size": 7013,
