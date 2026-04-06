@@ -5,7 +5,7 @@ figs/**/*.json
 .DS_Store
 us_accidents.csv
 hotel_bookings.csv
-data/
+/data/
 .venv/
 .vscode/
 .idea/
