@@ -1,4 +1,4 @@
-# 3. Transformer Model (Report Text — English)
+# 3. Transformer Model
 
 *Paste or adapt the following into your report. Figures and tables can reference paths under `artifacts/transformer_caption/` after training.*
 
