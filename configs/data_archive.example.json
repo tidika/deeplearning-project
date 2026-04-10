@@ -1,0 +1,25 @@
+{
+  "captions_path": "archive/captions.txt",
+  "images_dir": "archive/Images",
+  "splits_dir": "metadata/splits",
+  "vocab_dir": "metadata/vocab",
+  "references_example_path": "configs/references.example.json",
+  "predictions_example_path": "configs/predictions.example.json",
+  "seed": 42,
+  "train_ratio": 0.8,
+  "val_ratio": 0.1,
+  "test_ratio": 0.1,
+  "min_word_freq": 5,
+  "max_caption_length": 40,
+  "image_size": [224, 224],
+  "image_normalization": {
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225]
+  },
+  "special_tokens": {
+    "pad": "<pad>",
+    "start": "<start>",
+    "end": "<end>",
+    "unk": "<unk>"
+  }
+}

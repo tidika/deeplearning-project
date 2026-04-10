@@ -1,0 +1,25 @@
+{
+  "config_path": "configs/data_archive.example.json",
+  "captions_path": "archive/captions.txt",
+  "seed": 42,
+  "ratios": {
+    "train": 0.8,
+    "val": 0.1,
+    "test": 0.1
+  },
+  "num_images": 31783,
+  "num_captions": 158914,
+  "captions_per_image": {
+    "unique_values": [
+      4,
+      5
+    ],
+    "min": 4,
+    "max": 5
+  },
+  "split_sizes": {
+    "train": 25426,
+    "val": 3178,
+    "test": 3179
+  }
+}

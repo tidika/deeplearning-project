@@ -1,0 +1,11 @@
+# Core runtime dependencies
+# numpy 2.3.x requires Python >=3.11; use 2.2.x on older interpreters (e.g. 3.9/3.10).
+numpy>=1.26,<2.3
+Pillow>=10.0,<12
+nltk>=3.8
+tqdm>=4.65
+
+# Deep learning backend — install a torch/torchvision pair that matches your CUDA/CPU and Python.
+# CPU-only example: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch>=2.1.0
+torchvision>=0.16.0

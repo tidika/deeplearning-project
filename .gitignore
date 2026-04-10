@@ -1,11 +1,20 @@
 __pycache__/
+__MACOSX/
 artifacts/
 *.pyc
 figs/**/*.json
 .DS_Store
 us_accidents.csv
 hotel_bookings.csv
-data/
+# Flickr30k at repo root only (do not ignore src/data Python package)
+/data/
+# Local / server bundles — do not commit (large)
+archive/
+archive.zip
+transformer_training_results.zip
+deeplearning-project_code_for_server.zip
+upload_chunks/
+nltk_data/
 .venv/
 .vscode/
 .idea/
