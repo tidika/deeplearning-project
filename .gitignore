@@ -3,11 +3,10 @@ artifacts/
 *.pyc
 figs/**/*.json
 .DS_Store
-us_accidents.csv
-hotel_bookings.csv
 /data/
 .venv/
 .vscode/
 .idea/
 figs*/
 **/logs/
+checkpoints/

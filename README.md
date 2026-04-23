@@ -1,11 +1,25 @@
-# Deep Learning Project: Image Captioning Comparison
+# Image Captioning: BUTD vs Transformer
 
-This project compares two image captioning approaches on Flickr30k:
+A comparative study of two image captioning architectures on the Flickr30k dataset.
 
-- a CNN + Transformer decoder baseline
-- a Bottom-Up / Top-Down style object-attention model
+| Model | Visual Features | Decoder | Attention |
+|---|---|---|---|
+| **BUTD** | 36 object regions (Faster R-CNN, 1024-dim) | 2-layer LSTM | Additive (Bahdanau) |
+| **Transformer** | 49 spatial patches (ResNet-50, 2048-dim) | Transformer decoder | Multi-head cross-attention |
 
-The comparison is designed to use the same data pipeline, vocabulary, image preprocessing, and evaluation setup for both models.
+## Results
+
+Evaluated on the Flickr30k validation split (3,178 images):
+
+| Metric | BUTD | Transformer |
+|---|---|---|
+| BLEU-1 | 0.6318 | **0.6686** |
+| BLEU-2 | 0.4175 | **0.4611** |
+| BLEU-3 | 0.2768 | **0.3183** |
+| BLEU-4 | 0.1854 | **0.2216** |
+| METEOR | 0.3920 | **0.4230** |
+
+The Transformer outperforms BUTD on all five metrics, with a 19.6% relative improvement on BLEU-4.
 
 ## Project Layout
 
@@ -14,247 +28,173 @@ deeplearning-project/
 |-- README.md
 |-- requirements.txt
 |-- configs/
+|   |-- butd_val_predictions.json
+|   |-- transformer_val_predictions.json
+|   |-- final_results.json
 |   |-- data_config.example.json
 |   |-- predictions.example.json
 |   `-- references.example.json
-|-- data/
-|   |-- Images/
-|   `-- captions.txt
+|-- data/                          <- not committed (download separately)
+|   |-- Images/                    <- Flickr30k .jpg files
+|   |-- captions.txt
+|   |-- butd_features/             <- pre-extracted Faster R-CNN features
+|   `-- transformer_features/      <- pre-extracted ResNet-50 features
 |-- metadata/
 |   |-- sanity_check_summary.json
 |   |-- splits/
-|   |   |-- README.md
-|   |   |-- split_summary.json
-|   |   |-- test.txt
 |   |   |-- train.txt
-|   |   `-- val.txt
+|   |   |-- val.txt
+|   |   `-- test.txt
 |   `-- vocab/
-|       |-- README.md
 |       |-- flickr30k_vocab.json
 |       `-- flickr30k_vocab_stats.json
+|-- notebooks/
+|   |-- colab_butd.ipynb           <- train BUTD model on Colab
+|   |-- colab_transformer.ipynb    <- train Transformer model on Colab
+|   |-- colab_results_analysis.ipynb <- run full evaluation on Colab
+|   `-- results_analysis.ipynb     <- local evaluation notebook
 |-- scripts/
 |   |-- build_vocab.py
+|   |-- extract_butd_features.py
+|   |-- extract_transformer_features.py
 |   |-- evaluate_captions.py
 |   |-- generate_splits.py
 |   |-- inspect_dataloader.py
 |   |-- run_checks.py
 |   `-- sanity_check.py
+|-- src/
+|   |-- data/
+|   |   |-- butd_dataset.py
+|   |   |-- transformer_dataset.py
+|   |   |-- constants.py
+|   |   |-- dataset.py
+|   |   |-- preprocess.py
+|   |   |-- splits.py
+|   |   `-- vocab.py
+|   |-- eval/
+|   |   `-- metrics.py
+|   |-- models/
+|   |   |-- butd_model.py
+|   |   `-- transformer_model.py
+|   `-- training/
+|       |-- train_butd.py
+|       `-- train_transformer.py
 |-- tests/
 |   |-- test_data_evaluation.py
 |   `-- test_lightweight_checks.py
-|-- .github/
-|   `-- workflows/
-|       `-- ci.yml
-`-- src/
-    |-- data/
-    |   |-- __init__.py
-    |   |-- constants.py
-    |   |-- dataset.py
-    |   |-- preprocess.py
-    |   |-- splits.py
-    |   `-- vocab.py
-    |-- eval/
-    |   |-- __init__.py
-    |   `-- metrics.py
-    `-- project_config.py
+`-- .github/
+    `-- workflows/
+        `-- ci.yml
 ```
 
-Note: `data/` is ignored by Git in this repo, so committed split files should live under `metadata/splits/`, not under `data/`.
+## Reproducing the Results
 
-## Shared Configuration
+### 1. Dataset
 
-The data and evaluation scripts use [data_config.example.json](configs/data_config.example.json) as the shared source of default paths and settings.
+Download the Flickr30k dataset from [Kaggle](https://www.kaggle.com/datasets/adityajn105/flickr30k) and place the files as follows:
 
-Config-backed settings include:
-
-- captions path
-- image directory
-- split output directory
-- vocabulary output directory
-- train / val / test ratios
-- random seed
-- `min_word_freq`
-- `max_caption_length`
-- image size
-- image normalization
-- example evaluation file paths
-
-All major scripts still allow CLI overrides, but their defaults come from the shared config file.
-
-## Shared Interface
-
-Dataset sample fields:
-
-- `image_id`
-- `image_path`
-- `image`
-- `caption_text`
-- `caption_ids`
-- `target_ids`
-- `length`
-
-Evaluation inputs:
-
-- references: `dict[str, list[str]]`
-- predictions: `dict[str, str]`
-
-## Caption Preprocessing Rules
-
-The shared caption preprocessing pipeline is fixed so both models consume the same tokenized data:
-
-- trim leading and trailing whitespace
-- lowercase all caption text
-- surround these punctuation marks with spaces before tokenization:
-  `. , ! ? ; : " ( )`
-- collapse repeated whitespace to a single space
-- tokenize by whitespace after normalization
-- add `<start>` and `<end>` after tokenization when building model inputs
-- reserve `<pad>`, `<start>`, `<end>`, and `<unk>` with fixed ids `0, 1, 2, 3`
-- build the vocabulary from the training split only
-- use `min_word_freq = 5`
-- use `max_caption_length = 40`, where the limit includes both boundary tokens
-
-## Image Preprocessing Defaults
-
-Unless a model owner provides a custom image transform, the shared loader will:
-
-- convert images to RGB
-- resize images to `224 x 224`
-- scale pixel values to `[0, 1]`
-- normalize channels with ImageNet statistics
-
-Default normalization:
-
-- mean: `[0.485, 0.456, 0.406]`
-- std: `[0.229, 0.224, 0.225]`
-
-## Evaluation Contract
-
-The shared evaluation pipeline computes corpus-level metrics over the exact set of image ids present in both files. By default, references and predictions must contain the same image ids; partial prediction files are treated as invalid rather than silently scoring only the overlap.
-
-Metrics:
-
-- BLEU-1
-- BLEU-2
-- BLEU-3
-- BLEU-4
-- METEOR
-
-References JSON must map each image id to a non-empty list of reference captions:
-
-```json
-{
-  "1000092795.jpg": [
-    "Two young guys with shaggy hair look at their hands while hanging out in the yard .",
-    "Two friends enjoy time spent together ."
-  ]
-}
+```
+data/Images/     <- all .jpg image files
+data/captions.txt
 ```
 
-Predictions JSON must map each image id to exactly one generated caption string:
+### 2. Install dependencies
 
-```json
-{
-  "1000092795.jpg": "Two young men stand together in a yard ."
-}
+```bash
+pip install -r requirements.txt
+python -m nltk.downloader wordnet omw-1.4
 ```
 
-Templates:
+### 3. Generate splits and vocabulary
 
-- [references.example.json](configs/references.example.json)
-- [predictions.example.json](configs/predictions.example.json)
-
-## Quick Start
-
-1. Install dependencies:
-
-```powershell
-py -3 -m pip install -r requirements.txt
+```bash
+python scripts/generate_splits.py --config configs/data_config.example.json
+python scripts/build_vocab.py --config configs/data_config.example.json
 ```
 
-2. Put Flickr30k images under [data/Images](data/Images).
-3. Keep captions in [data/captions.txt](data/captions.txt).
-4. Generate fixed splits:
+### 4. Train the models (Google Colab recommended)
 
-```powershell
-py -3 scripts/generate_splits.py --config configs/data_config.example.json
+Upload the project folder to Google Drive, then open and run the Colab notebooks in order:
+
+| Notebook | Purpose |
+|---|---|
+| `notebooks/colab_butd.ipynb` | Extract BUTD features and train the BUTD model |
+| `notebooks/colab_transformer.ipynb` | Extract Transformer features and train the Transformer model |
+| `notebooks/colab_results_analysis.ipynb` | Run full evaluation and generate all result figures |
+
+> **Note:** Set runtime to T4 GPU before running. Both models were trained for 20 epochs. Feature extraction for BUTD takes approximately 2-3 hours; Transformer feature extraction takes approximately 2-3 minutes.
+
+### 5. Evaluate locally
+
+```bash
+python scripts/evaluate_captions.py --config configs/data_config.example.json
 ```
 
-5. Build the shared vocabulary from the training split:
+## Data Pipeline
 
-```powershell
-py -3 scripts/build_vocab.py --config configs/data_config.example.json
+Both models share the same data pipeline to ensure a fair comparison:
+
+- **Split**: 80/10/10 train/val/test, fixed seed (seed=42)
+- **Vocabulary**: built from training split only, `min_word_freq=5`, vocab size=7,013
+- **Special tokens**: `<pad>=0`, `<start>=1`, `<end>=2`, `<unk>=3`
+- **Caption preprocessing**: lowercase, punctuation space-padded, whitespace normalized
+- **Max caption length**: 40 tokens (including boundary tokens)
+
+## Model Details
+
+### BUTD Model
+
+- **Encoder**: Faster R-CNN (ResNet-50 + FPN, pretrained on COCO) — top-36 object regions, 1024-dim each
+- **Decoder**: 2-layer LSTM (Attention LSTM + Language LSTM)
+- **Attention**: Additive (Bahdanau-style) over 36 object regions
+- **Parameters**: 18,470,245
+- **Training**: Adam (lr=4e-4), StepLR decay (step=5, γ=0.5), dropout=0.5, grad clip=5.0
+
+### Transformer Model
+
+- **Encoder**: ResNet-50 (frozen) — 7×7 spatial feature map, 2048-dim projected to 512-dim
+- **Decoder**: 3 TransformerDecoderLayer blocks (masked self-attention + cross-attention)
+- **Attention**: Multi-head cross-attention (8 heads) over 49 spatial locations
+- **Parameters**: 20,851,557
+- **Training**: Adam (lr=1e-4), StepLR decay (step=5, γ=0.5), dropout=0.1, grad clip=1.0
+
+## Evaluation
+
+Both models are evaluated using corpus-level BLEU-1/2/3/4 and METEOR on the validation split. Each image has 5 human-written reference captions.
+
+```bash
+python scripts/evaluate_captions.py --config configs/data_config.example.json
 ```
 
-6. Inspect one batch from the shared DataLoader:
+## Validation and CI
 
-```powershell
-py -3 scripts/inspect_dataloader.py --config configs/data_config.example.json
+```bash
+# Full local verification
+python scripts/run_checks.py --config configs/data_config.example.json
+
+# Lightweight tests (no dataset required)
+python -m unittest tests.test_lightweight_checks
+
+# Full dataset-dependent tests
+python -m unittest tests.test_data_evaluation
 ```
 
-7. Evaluate captions from JSON files:
-
-```powershell
-py -3 scripts/evaluate_captions.py --config configs/data_config.example.json
-```
-
-8. Run the full local verification suite:
-
-```powershell
-py -3 scripts/run_checks.py --config configs/data_config.example.json
-```
-
-## Validation
-
-Full local verification:
-
-```powershell
-py -3 scripts/run_checks.py --config configs/data_config.example.json
-```
-
-Direct sanity check only:
-
-```powershell
-py -3 scripts/sanity_check.py --config configs/data_config.example.json
-```
-
-Full dataset-dependent unit tests:
-
-```powershell
-py -3 -m unittest tests.test_data_evaluation
-```
-
-Lightweight tests that do not require the local Flickr30k dataset:
-
-```powershell
-py -3 -m unittest tests.test_lightweight_checks
-```
-
-## CI
-
-A minimal GitHub Actions workflow is provided at [ci.yml](.github/workflows/ci.yml). It runs lightweight checks that do not depend on the local Flickr30k dataset:
-
-- dependency installation
-- NLTK resource download
-- Python compile checks
-- `tests.test_lightweight_checks`
-
-## Key Files
-
-- Shared config: [data_config.example.json](configs/data_config.example.json)
-- Split files: [metadata/splits](metadata/splits)
-- Vocabulary files: [metadata/vocab](metadata/vocab)
-- Shared dataset loader: [dataset.py](src/data/dataset.py)
-- Shared evaluation metrics: [metrics.py](src/eval/metrics.py)
-- Local verification entrypoint: [run_checks.py](scripts/run_checks.py)
-- Sanity-check output: [sanity_check_summary.json](metadata/sanity_check_summary.json)
-- Full dataset-dependent tests: [test_data_evaluation.py](tests/test_data_evaluation.py)
-- Lightweight CI tests: [test_lightweight_checks.py](tests/test_lightweight_checks.py)
+A GitHub Actions workflow at [ci.yml](.github/workflows/ci.yml) runs lightweight checks on every push.
 
 ## Dependencies
 
-METEOR may also require NLTK data resources:
+- Python 3.10+
+- torch==2.10.0
+- torchvision
+- numpy==2.3.3
+- Pillow==11.3.0
+- nltk==3.9.3
 
-```powershell
-py -3 -m nltk.downloader wordnet omw-1.4
-```
+## Team
+
+- Tochukwu Idika (Team Lead, BUTD model)
+- Junhui Chen (Data pipeline and evaluation)
+- Po Ting Lee (Transformer model)
+- Randy Kang (Experiments and analysis)
+
+Georgia Institute of Technology — Deep Learning (CS 7643), Spring 2026
